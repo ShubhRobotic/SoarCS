@@ -3,7 +3,6 @@ import subprocess
 from tkinter import *
 import customtkinter as tk
 from PIL import Image, ImageTk
-from customtkinter import CTkImage
 import os, webview, cv2
 
 
