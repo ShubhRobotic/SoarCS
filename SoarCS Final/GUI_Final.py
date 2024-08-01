@@ -1,112 +1,118 @@
 from itertools import count
-import subprocess
 from tkinter import *
 import customtkinter as tk
+import cv2
 from PIL import Image, ImageTk
-import os, webview, cv2
-
-
+from customtkinter import CTkImage
+import webview, subprocess, os
 # Setting appearance and color theme
-tk.set_appearance_mode("dark")  # Set the appearance mode to dark
-tk.set_default_color_theme("dark-blue")  # Set the color theme
+tk.set_appearance_mode("dark")  
+tk.set_default_color_theme("dark-blue")
 
 # Creating the main window
-root = tk.CTk()  # Create the main window using CustomTkinter
-root.geometry("400x650")  # Set the size of the main window
+root = tk.CTk() 
+root.geometry("400x650") 
 
 # Creating a frame
-frame = tk.CTkFrame(master=root, border_color="black", border_width=10, corner_radius=0)  # Create a frame with a border
-frame.pack(fill="both", expand=True)  # Pack the frame to fill the window
+frame = tk.CTkFrame(master=root, border_color="black", border_width=10, corner_radius=0)  
+frame.pack(fill="both", expand=True) 
 
 # Notch on top center
-notch = tk.CTkButton(master=frame, text='PYphone', width=100, height=40, fg_color='black', state=DISABLED)  # Create a disabled button as a notch
-notch.place(x=200-50, y=-5)  # Place the notch button at the top center
+notch = tk.CTkButton(master=frame, text='PYphone', width=100, height=40, fg_color='black', state=DISABLED)  
+notch.place(x=200-50, y=-5) 
 
 # Initialize video capture
-cap = cv2.VideoCapture(0)  # Initialize video capture from the default camera
-current_frame = None  # Global variable to store the current frame
-label_widget = None  # Global variable for the video display label
-count = 0  # Global counter for screenshots
+cap = cv2.VideoCapture(0)  
+current_frame = None  
+label_widget = None 
+count = 0  
 
 # Function to show the frame from the webcam
-def show_frame():
-    global current_frame, label_widget  # Declare current_frame and label_widget as global
 
+def show_frame():
+    global current_frame, label_widget 
     if label_widget is None:
-        label_widget = tk.CTkLabel(master=root)  # Create a label to display the video
-        label_widget.place(x=0, y=0, relwidth=1, relheight=1)  # Place the label to fill the window
+        label_widget = tk.CTkLabel(root, text="")
+        label_widget.place(x=0, y=0, relwidth=1, relheight=1)
 
     def update_frame():
-        global current_frame  # Declare current_frame as global
-        ret, frame = cap.read()  # Read a frame from the webcam
+        global current_frame  
+        ret, frame = cap.read()
         if ret:
-            current_frame = frame  # Update current frame
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # Convert frame to RGB
-            img = Image.fromarray(frame)  # Convert frame to PIL image
-            photo = tk.CTkImage(light_image=img, dark_image=img, size=(img.width, img.height))  # Create a CTkImage from PIL image
+            current_frame = frame  
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(frame)
+            photo = CTkImage(light_image=img, dark_image=img, size=(img.width, img.height))
+            label_widget.image = photo  
+            label_widget.configure(image=photo)
+        root.after(20, update_frame)
 
-            if label_widget:  # Ensure label_widget is not None
-                label_widget.configure(image=photo, text = "")  # Configure the label to display the image
-                label_widget.image = photo  # Store the image in the label to prevent garbage collection
+    update_frame()
 
-        root.after(20, update_frame)  # Update the frame every 20 milliseconds
+ 
 
-    update_frame()  # Start updating the frame
-
-    # Create and place a button to save the current photo
-    save_photo = tk.CTkButton(master=root, text="Save Photo", width=20, command=screenshot, height=20, border_width=0, corner_radius=30)
-    save_photo.pack(side=BOTTOM)
-    save_photo.place(x=200, y=500)
-
-
-# Button command to save a screenshot
+# Button commands
 def screenshot():
-    global current_frame, count  # Declare current_frame and count as global
+    global current_frame, count  
     if current_frame is not None:
-        os.chdir(r"C:\Users\jayam\OneDrive\Desktop\SoarCS Final\Images")  # Change directory to save the image
-        name = f"frame{count}.jpg"  # Create a filename for the image
-        cv2.imwrite(name, current_frame)  # Save the current frame as an image
-        count += 1  # Increment the counter for the next screenshot
+        img_dir = r"C:\Users\jayam\OneDrive\Desktop\SoarCS Final\Images" 
+        os.makedirs(img_dir, exist_ok=True)  
+        name = f"frame{count}.jpg"
+        cv2.imwrite(os.path.join(img_dir, name), current_frame)
+        count += 1
     else:
-        print("No frame to save")  # Print a message if no frame is available
+        print("No frame to save")
 
 # Function to display images from a directory
 def showImg():
-    img_dir = r"C:\Users\jayam\OneDrive\Desktop\SoarCS Final\Images"  # Directory containing images
-    for img in os.listdir(img_dir):  # List all files in the directory
-        if img.endswith(".png"):  # Check if the file is a PNG image
-            Label(root, image=PhotoImage(file=os.path.join(img_dir, img)))  # Create a label to display the image
+    global row, col
+    img_dir = r"C:\Users\jayam\OneDrive\Desktop\SoarCS Final\Images" 
+    for img_file in os.listdir(img_dir):
+        if img_file.endswith(".png"):
+            img_path = os.path.join(img_dir, img_file)
+            image = Image.open(img_path)
+            image.thumbnail((175, 200))  
+            img = ImageTk.PhotoImage(image)
             
-# Function to open the camera view
+            # Create a label for each image and add it to the gallery frame
+            img_label = tk.CTkLabel(master=gallery_frame, image=img, text="")
+            img_label.image = img  # Keep a reference to avoid garbage collection
+            img_label.grid(row=row, column=col, padx=15, pady=10)
+            col += 1
+            if col > 1: 
+                col = 0
+                row += 1
+            
 def Camera():
-    show_frame()  # Call the function to show the webcam feed
+    show_frame() 
 
 # Function to open the gallery (currently just a placeholder)
 def gallery():
-    global gallery_frame
+    global gallery_frame, row, col
     gallery_frame = tk.CTkFrame(master=root)
     gallery_frame.place(x=0, y=0, relwidth=1, relheight=1)
-
-    img_dir = r"C:\Users\jayam\OneDrive\Desktop\SoarCS Final\Images"
-
+    
     row = 0
     col = 0
+    image_refs = []  # List to keep references to images to prevent garbage collection
+    img_dir = r"C:\Users\jayam\OneDrive\Desktop\SoarCS Final\Images"
+
     for img_file in os.listdir(img_dir):
-        if img_file.endswith(".jpg") or img_file.endswith(".png"):
+        if img_file.endswith(".jpg") or img_file.endswith(".png"): 
             img_path = os.path.join(img_dir, img_file)
             image = Image.open(img_path)
-            image.thumbnail((200, 200))
+            image.thumbnail((175, 200))  
             img = ImageTk.PhotoImage(image)
-
+            image_refs.append(img)  # Keep reference to image
+            
             # Create a label for each image and add it to the gallery frame
             img_label = tk.CTkLabel(master=gallery_frame, image=img, text="")
-            img_label.image = img
-            img_label.grid(row=row, column=col, padx=12, pady=10)
+            img_label.image = img  # Keep reference to avoid garbage collection
+            img_label.grid(row=row, column=col, padx=10, pady=10)
             col += 1
-            if col > 1:
+            if col > 1: 
                 col = 0
                 row += 1
-
 
 
 
@@ -134,8 +140,8 @@ application = {
     2: ("Browser", google),
     3: ("Gallery", gallery),
     4: ("Snake", Snake),
-    5: ("Pong", Pong),
-    6: ("Sort Visual", sort_visual),
+    5: ("sort_visual", sort_visual),
+    6: ("Pong", Pong),
 }
 
 # Function to create home screen with buttons
@@ -150,7 +156,7 @@ def create_home_screen():
             count += 1  # Increment counter
 
 # Function to quit the current view and return to the home page
-def quit_app(event=None):
+def quit_camera(event=None):
     global label_widget, gallery_frame
     if label_widget is not None:
         label_widget.destroy()  # Destroy the label widget if it exists
@@ -158,15 +164,15 @@ def quit_app(event=None):
     if gallery_frame is not None:
         gallery_frame.destroy()
         gallery_frame = None
+
     for widget in root.winfo_children():  # Iterate over all widgets in the root window
         if isinstance(widget, tk.CTkButton):  # Check if the widget is a CTkButton
             widget.destroy()  # Destroy the button widget
+    create_home_screen()  
+
     
-
-    create_home_screen()  # Recreate the home screen
-
 # Binding the ESC key to quit the current view and return to home screen
-root.bind("<Escape>", quit_app)
+root.bind("<Escape>", quit_camera)
 
 # Create the home screen initially
 create_home_screen()
