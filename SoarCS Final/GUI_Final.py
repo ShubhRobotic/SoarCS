@@ -1,4 +1,3 @@
-from itertools import count
 from tkinter import *
 import customtkinter as tk
 import cv2
